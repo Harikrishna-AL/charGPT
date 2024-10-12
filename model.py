@@ -14,6 +14,7 @@ from dataclasses import dataclass
 import torch
 import torch.nn as nn
 from torch.nn import functional as F
+from gensim.models import Word2Vec
 
 class LayerNorm(nn.Module):
     """ LayerNorm but with an optional bias. PyTorch doesn't support simply bias=False """
@@ -105,6 +106,25 @@ class Block(nn.Module):
         x = x + self.mlp(self.ln_2(x))
         return x
 
+class FutureNTokens(nn.Module):
+    def __init__(self, config):
+        super().__init__()
+        self.config = config
+        self.vocab_size = config.vocab_size
+        self.n_embd = config.n_embd
+
+        self.linear1 = nn.Linear(self.n_embd, 512)
+        self.linear2 = nn.Linear(512, 128)
+        self.linear3 = nn.Linear(128, 1)
+        self.softmax = nn.Softmax(dim=1)
+
+    def forward(self, x):
+        x = self.linear1(x)
+        x = self.linear2(x)
+        x = self.linear3(x)
+        x = self.softmax(x)
+        return x
+
 @dataclass
 class GPTConfig:
     block_size: int = 1024
@@ -129,7 +149,9 @@ class GPT(nn.Module):
             drop = nn.Dropout(config.dropout),
             h = nn.ModuleList([Block(config) for _ in range(config.n_layer)]),
             ln_f = LayerNorm(config.n_embd, bias=config.bias),
+            future_n_tokens = FutureNTokens(config),
         ))
+        
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
         # with weight tying when using torch.compile() some warnings get generated:
         # "UserWarning: functional_call was passed multiple values for tied weights.
@@ -180,6 +202,12 @@ class GPT(nn.Module):
         for block in self.transformer.h:
             x = block(x)
         x = self.transformer.ln_f(x)
+
+        # forward the future n tokens model
+        future_n_tokens = self.transformer.future_n_tokens(x)
+        # add n future tokens to the ith token
+        x = x + torch.matmul(future_n_tokens, x)
+        
 
         if targets is not None:
             # if we are given some desired targets also calculate the loss

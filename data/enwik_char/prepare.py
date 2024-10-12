@@ -51,49 +51,12 @@ def clean_wikipedia_text(text):
     # Remove equal signs '=' and apostrophes '''
     text = re.sub(r'[=\'"]+', '', text)
 
-    # Remove extra whitespace and newlines
-    # text = re.sub(r'\s+', ' ', text).strip()
     text = text.strip()
 
-    # Remove extra whitespace and extra newlines (keep single newlines)
     text = re.sub(r'\n+', '\n', text)  # Collapse multiple newlines into one
     text = re.sub(r'[ \t]+', ' ', text)
 
     return text
-
-# def remove_xml_tags(data):
-#     import re
-
-#     # detect content between all the <text> and </text> and only keep that
-#     match = re.search(r'<text.*?>(.*)</text>', data, re.DOTALL)
-#     data = match.group(1)
-
-#     # replace words within [] and {}
-#     data = re.sub(r'\[.*?\]', '', data)
-#     data = re.sub(r'\{.*?\}', '', data)
-#     # detect <tag> and </tag> and remove them
-#     regex = re.compile(r'<.*?>')
-#     data = re.sub(regex, '', data)
-
-
-
-#     # remove xml tags
-#     data = data.replace('&lt;','<')
-#     data = data.replace('&gt;','>')
-#     data = data.replace('&amp;','&')
-#     data = data.replace('&quot;','"')
-#     data = data.replace('&apos;',"'")
-#     data = data.replace('&nbsp;',' ')
-
-
-#     # remove xml tags
-#     data = data.replace('<doc>', '\n')
-#     data = data.replace('</doc>', '\n')
-
-#     # remove all extra spaces
-#     data = re.sub(' +', ' ', data)
-#     return data
-
 
 #main thread
 def main():
