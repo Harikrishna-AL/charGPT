@@ -52,7 +52,12 @@ def clean_wikipedia_text(text):
     text = re.sub(r'[=\'"]+', '', text)
 
     # Remove extra whitespace and newlines
-    text = re.sub(r'\s+', ' ', text).strip()
+    # text = re.sub(r'\s+', ' ', text).strip()
+    text = text.strip()
+
+    # Remove extra whitespace and extra newlines (keep single newlines)
+    text = re.sub(r'\n+', '\n', text)  # Collapse multiple newlines into one
+    text = re.sub(r'[ \t]+', ' ', text)
 
     return text
 
