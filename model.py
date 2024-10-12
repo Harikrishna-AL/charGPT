@@ -206,8 +206,10 @@ class GPT(nn.Module):
         # forward the future n tokens model
         future_n_tokens = self.transformer.future_n_tokens(x)
         # add n future tokens to the ith token
+        print(future_n_tokens.shape)
+        print(x.shape)
         x = x + torch.matmul(future_n_tokens, x)
-        
+
 
         if targets is not None:
             # if we are given some desired targets also calculate the loss
