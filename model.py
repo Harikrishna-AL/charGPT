@@ -133,6 +133,7 @@ class GPTConfig:
     n_head: int = 12
     n_embd: int = 768
     dropout: float = 0.0
+    future_n_tokens: int = 4
     bias: bool = True # True: bias in Linears and LayerNorms, like GPT-2. False: a bit better and faster
 
 class GPT(nn.Module):
@@ -204,11 +205,11 @@ class GPT(nn.Module):
         x = self.transformer.ln_f(x)
 
         # forward the future n tokens model
-        future_n_tokens = self.transformer.future_n_tokens(x)
-        # add n future tokens to the ith token
-        # print(future_n_tokens.shape)
-        # print(x.shape)
-        x = x + future_n_tokens * x
+        if self.config.future_n_tokens > 0:
+            future_n_tokens_emb = self.get_future_token_emb(x, n=self.config.future_n_tokens)
+
+            # Add future token embeddings (this adds the future info)
+            x = x + future_n_tokens_emb * x
 
 
         if targets is not None:
@@ -221,6 +222,20 @@ class GPT(nn.Module):
             loss = None
 
         return logits, loss
+    
+    def get_future_token_emb(self, x, n):
+        # x is of shape (b, t, n_embd) and we want to add future tokens
+        future_x = torch.zeros_like(x)  # Initialize a tensor to hold future token information
+        b, t, n_embd = x.size()
+
+        # Add the embeddings from the next `n` future tokens for each position
+        for i in range(t):
+            # Future tokens should be within bounds
+            for j in range(1, n+1):
+                if i + j < t:
+                    future_x[:, i, :] += x[:, i+j, :]  # Sum up the next `n` token embeddings
+
+        return future_x
 
     def crop_block_size(self, block_size):
         # model surgery to decrease the block size if necessary
