@@ -204,7 +204,7 @@ class GPT(nn.Module):
         x = self.transformer.ln_f(x)
 
         # forward the future n tokens model
-        future_n_tokens = self.transformer.future_n_tokens(x)
+        future_n_tokens = self.transformer.future_n_tokens(x).T
         # add n future tokens to the ith token
         print(future_n_tokens.shape)
         print(x.shape)
