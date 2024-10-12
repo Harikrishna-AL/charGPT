@@ -202,14 +202,15 @@ class GPT(nn.Module):
         x = self.transformer.drop(tok_emb + pos_emb)
         for block in self.transformer.h:
             x = block(x)
+            if self.config.future_n_tokens > 0:
+                future_n_tokens_emb = self.get_future_token_emb(x, n=self.config.future_n_tokens)
+
+                # Add future token embeddings (this adds the future info)
+                x = x + future_n_tokens_emb * x
         x = self.transformer.ln_f(x)
 
         # forward the future n tokens model
-        if self.config.future_n_tokens > 0:
-            future_n_tokens_emb = self.get_future_token_emb(x, n=self.config.future_n_tokens)
-
-            # Add future token embeddings (this adds the future info)
-            x = x + future_n_tokens_emb * x
+        
 
 
         if targets is not None:
