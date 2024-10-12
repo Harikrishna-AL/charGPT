@@ -19,6 +19,76 @@ def download_file(url):
     else:
         print(f"file {file_name} already exists")
 
+def clean_wikipedia_text(text):
+    import re
+    match = re.search(r'<text.*?>(.*)</text>', text, re.DOTALL)
+    data = match.group(1)
+    # Remove all XML tags using a regular expression
+    text = re.sub(r'<[^>]+>', '', data)
+    # Remove #REDIRECT lines
+    text = re.sub(r'#REDIRECT \[\[.*?\]\]', '', text)
+    
+    # Remove metadata (timestamps, user info, IDs)
+    text = re.sub(r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z', '', text)  # Timestamps
+    text = re.sub(r'(\bcur_id=\d+|\b\d{1,9})', '', text)  # IDs and numbers
+    text = re.sub(r'[A-Za-z]+\s\d{4,6}', '', text)  # User info
+
+    # Remove links in double brackets but keep their text
+    text = re.sub(r'\[\[([^\|\]]+\|)?([^\]]+)\]\]', r'\2', text)  # Keep the link text
+
+    # Remove templates in curly brackets but keep text inside
+    text = re.sub(r'\{\{([^\|\}]+\|)?([^\}]+)\}\}', r'\2', text)
+
+    # Remove reference tags and content inside <ref></ref>
+    text = re.sub(r'<ref.*?>.*?</ref>', '', text)
+
+    # Remove HTML-like special characters (e.g., &amp;, &quot;, etc.)
+    text = re.sub(r'&[a-z]+;', '', text)
+
+    # Remove URLs in brackets
+    text = re.sub(r'\[http[^\]]*\]', '', text)
+
+    # Remove equal signs '=' and apostrophes '''
+    text = re.sub(r'[=\'"]+', '', text)
+
+    # Remove extra whitespace and newlines
+    text = re.sub(r'\s+', ' ', text).strip()
+
+    return text
+
+# def remove_xml_tags(data):
+#     import re
+
+#     # detect content between all the <text> and </text> and only keep that
+#     match = re.search(r'<text.*?>(.*)</text>', data, re.DOTALL)
+#     data = match.group(1)
+
+#     # replace words within [] and {}
+#     data = re.sub(r'\[.*?\]', '', data)
+#     data = re.sub(r'\{.*?\}', '', data)
+#     # detect <tag> and </tag> and remove them
+#     regex = re.compile(r'<.*?>')
+#     data = re.sub(regex, '', data)
+
+
+
+#     # remove xml tags
+#     data = data.replace('&lt;','<')
+#     data = data.replace('&gt;','>')
+#     data = data.replace('&amp;','&')
+#     data = data.replace('&quot;','"')
+#     data = data.replace('&apos;',"'")
+#     data = data.replace('&nbsp;',' ')
+
+
+#     # remove xml tags
+#     data = data.replace('<doc>', '\n')
+#     data = data.replace('</doc>', '\n')
+
+#     # remove all extra spaces
+#     data = re.sub(' +', ' ', data)
+#     return data
+
 
 #main thread
 def main():
@@ -31,6 +101,9 @@ def main():
 
     data = zipfile.ZipFile(zip_path).read('enwik8')
     data = [chr(s) for s in data]
+    data = ''.join(data)
+    data = clean_wikipedia_text(data)
+    print(data[:200])
 
     print(f"length of dataset in characters: {len(data):,}")
 
