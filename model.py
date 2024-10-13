@@ -114,7 +114,7 @@ class FutureNTokens(nn.Module):
         self.n_embd = config.n_embd
         self.n_future_tokens = config.future_n_tokens
 
-        self.linear1 = nn.Linear(self.n_embd * self.n_future_tokens, self.n_embd * 2)
+        self.linear1 = nn.Linear(self.n_embd * (self.n_future_tokens + 1), self.n_embd * 2)
         self.relu = nn.ReLU()
         self.linear2 = nn.Linear(self.n_embd * 2, self.n_embd)
         # self.linear3 = nn.Linear(128, 1)
@@ -240,9 +240,9 @@ class GPT(nn.Module):
             for j in range(1, n+1):
                 if i + j < t:
                     # concatenate the future token embeddings
-                    print(concat_tokens.size())
+                    # print(concat_tokens.size())
                     concat_tokens = torch.cat([concat_tokens, x[:, i+j, :]], dim=1)
-                    print(concat_tokens.size())
+                    # print(concat_tokens.size())
                     
                     # future_x[:, i, :] = new_token.squeeze(1)
                     # future_x[:, i, :] += x[:, i+j, :]  # Sum up the next `n` token embeddings
