@@ -238,11 +238,11 @@ class GPT(nn.Module):
             # Future tokens should be within bounds
             concat_tokens = x[:,i,:]
             for j in range(1, n+1):
-                if i + j < t:
+                if i + j < t - t % self.config.future_n_tokens:
                     # concatenate the future token embeddings
-                    print(concat_tokens.size())
+                    # print(concat_tokens.size())
                     concat_tokens = torch.cat([concat_tokens, x[:, i+j, :]], dim=1)
-                    print(concat_tokens.size())
+                    # print(concat_tokens.size())
                     
                     # future_x[:, i, :] = new_token.squeeze(1)
                     # future_x[:, i, :] += x[:, i+j, :]  # Sum up the next `n` token embeddings
