@@ -207,10 +207,10 @@ class GPT(nn.Module):
         for block in self.transformer.h:
             x = block(x)
             if self.config.future_n_tokens > 0:
-                future_n_tokens_emb = self.get_future_token_emb(x, n=self.config.future_n_tokens)
+                x = self.get_future_token_emb(x, n=self.config.future_n_tokens)
 
                 # Add future token embeddings (this adds the future info)
-                x = x + future_n_tokens_emb * x
+                # x = x + future_n_tokens_emb * x
         x = self.transformer.ln_f(x)
 
         # forward the future n tokens model
@@ -236,13 +236,15 @@ class GPT(nn.Module):
         # Add the embeddings from the next `n` future tokens for each position
         for i in range(t):
             # Future tokens should be within bounds
+            concat_tokens = x[:,i,:]
             for j in range(1, n+1):
                 if i + j < t:
                     # concatenate the future token embeddings
-                    concat_tokens = torch.cat([x[:, i, :], x[:, i+j, :]], dim=1)
-                    new_token = self.transformer.future_n_tokens(concat_tokens)
-                    future_x[:, i, :] = new_token.squeeze(1)
+                    concat_tokens = torch.cat([concat_tokens, x[:, i+j, :]], dim=1)
+                    
+                    # future_x[:, i, :] = new_token.squeeze(1)
                     # future_x[:, i, :] += x[:, i+j, :]  # Sum up the next `n` token embeddings
+            future_x[:, i, :] = self.transformer.future_n_tokens(concat_tokens)
         
         # add position embeddings
         future_x = self.transformer.drop(future_x + self.pos_emb)
