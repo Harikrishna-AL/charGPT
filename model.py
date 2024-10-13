@@ -240,7 +240,9 @@ class GPT(nn.Module):
             for j in range(1, n+1):
                 if i + j < t:
                     # concatenate the future token embeddings
+                    print(concat_tokens.size())
                     concat_tokens = torch.cat([concat_tokens, x[:, i+j, :]], dim=1)
+                    print(concat_tokens.size())
                     
                     # future_x[:, i, :] = new_token.squeeze(1)
                     # future_x[:, i, :] += x[:, i+j, :]  # Sum up the next `n` token embeddings
