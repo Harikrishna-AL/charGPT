@@ -136,7 +136,7 @@ class GPTConfig:
     n_head: int = 12
     n_embd: int = 768
     dropout: float = 0.0
-    future_n_tokens: int = 4 
+    future_n_tokens: int = 3 
     bias: bool = True # True: bias in Linears and LayerNorms, like GPT-2. False: a bit better and faster
 
 class GPT(nn.Module):
@@ -240,9 +240,9 @@ class GPT(nn.Module):
             for j in range(1, n+1):
                 if i + j < t:
                     # concatenate the future token embeddings
-                    # print(concat_tokens.size())
+                    print(concat_tokens.size())
                     concat_tokens = torch.cat([concat_tokens, x[:, i+j, :]], dim=1)
-                    # print(concat_tokens.size())
+                    print(concat_tokens.size())
                     
                     # future_x[:, i, :] = new_token.squeeze(1)
                     # future_x[:, i, :] += x[:, i+j, :]  # Sum up the next `n` token embeddings
