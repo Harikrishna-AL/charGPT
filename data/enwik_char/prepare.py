@@ -53,9 +53,12 @@ def clean_wikipedia_text(text):
 
     text = text.strip()
 
-    text = re.sub(r'\n+', '\n', text)  # Collapse multiple newlines into one
+    text = re.sub(r'\s*\n\s*', '\n', text)  # Collapse multiple newlines into one
     text = re.sub(r'[ \t]+', ' ', text)
 
+    # remove '|' from text
+    text = text.replace('|', '')
+    text = re.sub(r'[^A-Za-z0-9\s]', '', text)
     return text
 
 #main thread
