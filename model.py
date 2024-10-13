@@ -112,17 +112,20 @@ class FutureNTokens(nn.Module):
         self.config = config
         self.vocab_size = config.vocab_size
         self.n_embd = config.n_embd
+        self.n_future_tokens = config.future_n_tokens
 
-        self.linear1 = nn.Linear(self.n_embd, 512)
-        self.linear2 = nn.Linear(512, 128)
-        self.linear3 = nn.Linear(128, 1)
-        self.softmax = nn.Softmax(dim=1)
+        self.linear1 = nn.Linear(self.n_embd * self.n_future_tokens, self.n_embd * 2)
+        self.relu = nn.ReLU()
+        self.linear2 = nn.Linear(self.n_embd * 2, self.n_embd)
+        # self.linear3 = nn.Linear(128, 1)
+        # self.softmax = nn.Softmax(dim=1)
 
     def forward(self, x):
         x = self.linear1(x)
+        x = self.relu(x)
         x = self.linear2(x)
-        x = self.linear3(x)
-        x = self.softmax(x)
+        # x = self.linear3(x)
+        # x = self.softmax(x)
         return x
 
 @dataclass
@@ -133,7 +136,7 @@ class GPTConfig:
     n_head: int = 12
     n_embd: int = 768
     dropout: float = 0.0
-    future_n_tokens: int = 4
+    future_n_tokens: int = 4 
     bias: bool = True # True: bias in Linears and LayerNorms, like GPT-2. False: a bit better and faster
 
 class GPT(nn.Module):
@@ -199,6 +202,7 @@ class GPT(nn.Module):
         # forward the GPT model itself
         tok_emb = self.transformer.wte(idx) # token embeddings of shape (b, t, n_embd)
         pos_emb = self.transformer.wpe(pos) # position embeddings of shape (t, n_embd)
+        self.pos_emb = pos_emb
         x = self.transformer.drop(tok_emb + pos_emb)
         for block in self.transformer.h:
             x = block(x)
@@ -228,13 +232,20 @@ class GPT(nn.Module):
         # x is of shape (b, t, n_embd) and we want to add future tokens
         future_x = torch.zeros_like(x)  # Initialize a tensor to hold future token information
         b, t, n_embd = x.size()
-
+        # token = x[:, 0, :]  # Get the first token embedding
         # Add the embeddings from the next `n` future tokens for each position
         for i in range(t):
             # Future tokens should be within bounds
             for j in range(1, n+1):
                 if i + j < t:
-                    future_x[:, i, :] += x[:, i+j, :]  # Sum up the next `n` token embeddings
+                    # concatenate the future token embeddings
+                    concat_tokens = torch.cat([x[:, i, :], x[:, i+j, :]], dim=2).unsqueeze(1)
+                    new_token = self.transformer.future_n_tokens(concat_tokens)
+                    future_x[:, i, :] = new_token.squeeze(1)
+                    # future_x[:, i, :] += x[:, i+j, :]  # Sum up the next `n` token embeddings
+        
+        # add position embeddings
+        future_x = self.transformer.drop(future_x + self.pos_emb)
 
         return future_x
 
