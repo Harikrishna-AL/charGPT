@@ -82,7 +82,7 @@ class MLP(nn.Module):
         super().__init__()
         self.c_fc    = nn.Linear(config.n_embd, 4 * config.n_embd, bias=config.bias)
         self.gelu    = nn.GELU()
-        self.c_proj  = nn.Linear(4 * config.n_embd, config.n_embd, bias=config.bias)
+        self.c_proj  = nn.Linear(4 * config.n_embd, config.n_tokens * config.n_embd, bias=config.bias)
         self.dropout = nn.Dropout(config.dropout)
 
     def forward(self, x):
@@ -101,8 +101,17 @@ class Block(nn.Module):
         self.ln_2 = LayerNorm(config.n_embd, bias=config.bias)
         self.mlp = MLP(config)
 
+        self.gate = nn.Linear(config.n_embd, config.n_tokens)
+        self.sigmoid = nn.Sigmoid()
+
     def forward(self, x):
         x = x + self.attn(self.ln_1(x))
+        mlp_x = self.mlp(self.ln_2(x))
+        # spliy mlp_x into n_tokens for each sequence position
+
+        n_tokens_x = mlp_x.view(mlp_x.size(0), mlp_x.size(1), -1, mlp_x.size(2))
+        # mlp_x contains n_tokens for each sequence position
+        # gate = self.sigmoid(self.gate(x))
         x = x + self.mlp(self.ln_2(x))
         return x
 
@@ -137,6 +146,7 @@ class GPTConfig:
     n_embd: int = 768
     dropout: float = 0.0
     future_n_tokens: int = 0 
+    n_tokens: int = 2
     bias: bool = True # True: bias in Linears and LayerNorms, like GPT-2. False: a bit better and faster
 
 class GPT(nn.Module):
